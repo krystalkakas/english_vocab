@@ -1,0 +1,7 @@
+{
+  "name": "English Vocab Master",
+  "description": "An intelligent English vocabulary learning app that automatically generates word details, provides a sheet-based view, and includes quiz features.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

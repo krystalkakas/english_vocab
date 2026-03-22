@@ -1,0 +1,72 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: words
+// Document ID: auto-generated
+// Fields:
+//   - word: string (required) - The English word
+//   - phonetic: string (required) - Phonetic transcription
+//   - partOfSpeech: string (required) - Part of speech
+//   - translation: string (required) - Vietnamese translation
+//   - example: string (required) - Example sentence
+//   - audioUrl: string (optional) - Pronunciation audio URL
+//   - userId: string (required) - Owner UID
+//   - createdAt: timestamp (required) - Creation time
+//   - lastReviewedAt: timestamp (optional) - Last quiz time
+//   - masteryLevel: number (required) - 0 to 5
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+    
+    function isRecent(time) {
+      return time > request.time - duration.value(5, 'm') && time <= request.time;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "22028196@vnu.edu.vn" && request.auth.token.email_verified == true));
+    }
+    
+    function isValidWord(data) {
+      return data.keys().hasAll(['word', 'phonetic', 'partOfSpeech', 'translation', 'example', 'userId', 'createdAt', 'masteryLevel']) &&
+             data.word is string && data.word.size() > 0 && data.word.size() < 100 &&
+             data.phonetic is string && data.phonetic.size() < 100 &&
+             data.partOfSpeech is string && data.partOfSpeech.size() < 50 &&
+             data.translation is string && data.translation.size() < 200 &&
+             data.example is string && data.example.size() < 500 &&
+             data.userId == request.auth.uid &&
+             data.createdAt is timestamp &&
+             data.masteryLevel is number && data.masteryLevel >= 0 && data.masteryLevel <= 5;
+    }
+
+    match /words/{wordId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidWord(request.resource.data) && isRecent(request.resource.data.createdAt);
+      allow update: if (isDocOwner() || isAdmin()) && isValidWord(request.resource.data) && 
+                      request.resource.data.userId == resource.data.userId &&
+                      request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "entities": {
+    "Word": {
+      "title": "Vocabulary Word",
+      "description": "A vocabulary word with its details and user progress.",
+      "type": "object",
+      "properties": {
+        "word": { "type": "string", "description": "The English word." },
+        "phonetic": { "type": "string", "description": "Phonetic transcription." },
+        "partOfSpeech": { "type": "string", "description": "Part of speech (noun, verb, etc.)." },
+        "translation": { "type": "string", "description": "Vietnamese translation." },
+        "example": { "type": "string", "description": "An example sentence using the word." },
+        "audioUrl": { "type": "string", "description": "URL to the pronunciation audio." },
+        "userId": { "type": "string", "description": "The ID of the user who added this word." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the word was added." },
+        "lastReviewedAt": { "type": "string", "format": "date-time", "description": "When the word was last reviewed in a quiz." },
+        "masteryLevel": { "type": "integer", "description": "Mastery level from 0 to 5." }
+      },
+      "required": ["word", "phonetic", "partOfSpeech", "translation", "example", "userId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "words": {
+      "schema": "Word",
+      "description": "Collection of vocabulary words added by users."
+    }
+  }
+}
