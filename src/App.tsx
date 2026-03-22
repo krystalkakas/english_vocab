@@ -10,6 +10,7 @@ import {
   updateDoc, 
   doc, 
   deleteDoc,
+  serverTimestamp,
   getDocFromServer
 } from 'firebase/firestore';
 import { 
@@ -162,7 +163,7 @@ export default function App() {
         ...details,
         audioUrl: audioUrl || undefined,
         userId: user.uid,
-        createdAt: Timestamp.now(),
+        createdAt: serverTimestamp(),
         masteryLevel: 0
       };
 
@@ -194,11 +195,13 @@ export default function App() {
 
     if (filter === 'day') {
       result = result.filter(w => {
+        if (!w.createdAt) return true; // Show newly added words even if timestamp is pending
         const date = w.createdAt.toDate();
         return isWithinInterval(date, { start: startOfDay(now), end: endOfDay(now) });
       });
     } else if (filter === 'week') {
       result = result.filter(w => {
+        if (!w.createdAt) return true;
         const date = w.createdAt.toDate();
         return isWithinInterval(date, { start: startOfWeek(now), end: endOfWeek(now) });
       });

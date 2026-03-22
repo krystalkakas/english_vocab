@@ -39,7 +39,9 @@ service cloud.firestore {
     }
     
     function isRecent(time) {
-      return time > request.time - duration.value(5, 'm') && time <= request.time;
+      // Allow for 10 minutes of clock skew in either direction
+      return time > request.time - duration.value(10, 'm') && 
+             time < request.time + duration.value(10, 'm');
     }
 
     function isAdmin() {
