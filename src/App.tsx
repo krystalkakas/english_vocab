@@ -132,17 +132,30 @@ export default function App() {
     return () => unsubscribe();
   }, [user, isAuthReady]);
 
+  const [loginLoading, setLoginLoading] = useState(false);
+
   const handleLogin = async () => {
+    if (loginLoading) return;
+    setLoginLoading(true);
     try {
       const provider = new GoogleAuthProvider();
+      // Force account selection to avoid auto-closing issues in some browsers
+      provider.setCustomParameters({ prompt: 'select_account' });
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Login failed:", error);
       if (error.code === 'auth/unauthorized-domain') {
         alert(`Lỗi: Tên miền này chưa được cấp phép trong Firebase Console. \n\nHãy thêm tên miền sau vào 'Authorized Domains' trong Firebase Auth Settings: \n${window.location.hostname}`);
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        // This happens if the user clicks multiple times or closes the popup
+        console.log("Popup request was cancelled or closed.");
+      } else if (error.code === 'auth/popup-blocked') {
+        alert("Trình duyệt đã chặn cửa sổ đăng nhập. Hãy cho phép hiện popup cho trang web này.");
       } else {
         alert("Đăng nhập thất bại: " + error.message);
       }
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -245,11 +258,23 @@ export default function App() {
           <p className="text-[#5A5A40] mb-8">Học từ vựng thông minh với sự hỗ trợ của AI.</p>
           <button
             onClick={handleLogin}
-            className="w-full bg-[#5A5A40] text-white py-4 rounded-full font-medium flex items-center justify-center gap-3 hover:bg-[#4A4A30] transition-colors"
+            disabled={loginLoading}
+            className="w-full bg-[#5A5A40] text-white py-4 rounded-full font-medium flex items-center justify-center gap-3 hover:bg-[#4A4A30] transition-colors disabled:opacity-70"
           >
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
-            Đăng nhập với Google
+            {loginLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
+                Đăng nhập với Google
+              </>
+            )}
           </button>
+          {loginLoading && (
+            <p className="mt-4 text-xs text-[#5A5A40] opacity-70">
+              Đang mở cửa sổ đăng nhập... Nếu không thấy hiện lên, hãy kiểm tra xem trình duyệt có chặn popup không.
+            </p>
+          )}
         </motion.div>
       </div>
     );
