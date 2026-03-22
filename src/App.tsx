@@ -187,8 +187,13 @@ export default function App() {
 
       await addDoc(collection(db, 'words'), wordData);
       setNewWord('');
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'words');
+    } catch (error: any) {
+      console.error("Add word error:", error);
+      if (error.message.includes("Không thể lấy thông tin")) {
+        alert(error.message);
+      } else {
+        handleFirestoreError(error, OperationType.CREATE, 'words');
+      }
     } finally {
       setLoading(false);
     }
