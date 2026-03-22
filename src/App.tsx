@@ -136,8 +136,13 @@ export default function App() {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        alert(`Lỗi: Tên miền này chưa được cấp phép trong Firebase Console. \n\nHãy thêm tên miền sau vào 'Authorized Domains' trong Firebase Auth Settings: \n${window.location.hostname}`);
+      } else {
+        alert("Đăng nhập thất bại: " + error.message);
+      }
     }
   };
 
