@@ -199,6 +199,8 @@ export default function App() {
     }
   };
 
+  const [playingId, setPlayingId] = useState<string | null>(null);
+
   const handleDeleteWord = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'words', id));
@@ -207,9 +209,18 @@ export default function App() {
     }
   };
 
-  const playAudio = (url: string) => {
-    const audio = new Audio(url);
-    audio.play();
+  const playAudio = async (word: Word) => {
+    if (!word.audioUrl) return;
+    
+    setPlayingId(word.id!);
+    try {
+      const audio = new Audio(word.audioUrl);
+      await audio.play();
+    } catch (e) {
+      console.error("Audio play error:", e);
+    } finally {
+      setPlayingId(null);
+    }
   };
 
   const filteredWords = useMemo(() => {
@@ -436,10 +447,19 @@ export default function App() {
                           <td className="px-6 py-4">
                             {word.audioUrl && (
                               <button 
-                                onClick={() => playAudio(word.audioUrl!)}
-                                className="p-2 text-[#5A5A40] hover:bg-[#5A5A40] hover:text-white rounded-full transition-all"
+                                onClick={() => playAudio(word)}
+                                disabled={playingId === word.id}
+                                className={`p-2 rounded-full transition-all ${
+                                  playingId === word.id 
+                                    ? 'bg-[#5A5A40] text-white' 
+                                    : 'text-[#5A5A40] hover:bg-[#5A5A40] hover:text-white'
+                                }`}
                               >
-                                <Volume2 className="w-4 h-4" />
+                                {playingId === word.id ? (
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Volume2 className="w-4 h-4" />
+                                )}
                               </button>
                             )}
                           </td>

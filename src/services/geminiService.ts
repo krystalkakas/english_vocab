@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, Modality } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -46,7 +46,7 @@ export async function generatePronunciation(text: string): Promise<string | null
       model: "gemini-2.5-flash-preview-tts",
       contents: [{ parts: [{ text: `Say clearly: ${text}` }] }],
       config: {
-        responseModalities: ["AUDIO"],
+        responseModalities: [Modality.AUDIO],
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: { voiceName: 'Kore' },
@@ -55,9 +55,11 @@ export async function generatePronunciation(text: string): Promise<string | null
       },
     });
 
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (base64Audio) {
-      return `data:audio/mp3;base64,${base64Audio}`;
+    const part = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+    if (part?.inlineData) {
+      const base64Audio = part.inlineData.data;
+      const mimeType = part.inlineData.mimeType || 'audio/mp3';
+      return `data:${mimeType};base64,${base64Audio}`;
     }
   } catch (error) {
     console.error("Error generating pronunciation:", error);
