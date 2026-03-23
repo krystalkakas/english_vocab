@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import firebaseConfigImport from '../firebase-applet-config.json';
 
@@ -15,3 +15,6 @@ const config = {
 const app = initializeApp(config);
 export const db = getFirestore(app, config.firestoreDatabaseId || '(default)');
 export const auth = getAuth(app);
+
+// Persist login across browser sessions — user won't need to re-login
+setPersistence(auth, browserLocalPersistence).catch(console.error);
