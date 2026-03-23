@@ -34,7 +34,8 @@ import {
   User as UserIcon,
   Loader2,
   CheckCircle2,
-  XCircle
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, isWithinInterval, subDays } from 'date-fns';
@@ -82,6 +83,15 @@ export default function App() {
   const [view, setView] = useState<'sheet' | 'quiz'>('sheet');
   const [filter, setFilter] = useState<'all' | 'day' | 'week'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
+
+  // Auto-hide toast after 4 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   // Auth listener
   useEffect(() => {
@@ -189,11 +199,7 @@ export default function App() {
       setNewWord('');
     } catch (error: any) {
       console.error("Add word error:", error);
-      if (error.message.includes("Không thể lấy thông tin")) {
-        alert(error.message);
-      } else {
-        handleFirestoreError(error, OperationType.CREATE, 'words');
-      }
+      setToast({ message: error.message || 'Đã xảy ra lỗi. Vui lòng thử lại.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -498,6 +504,38 @@ export default function App() {
           <Quiz words={words} onComplete={() => setView('sheet')} />
         )}
       </main>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -40 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-md w-[90%]"
+          >
+            <div className={cn(
+              "flex items-center gap-3 px-5 py-4 rounded-2xl shadow-lg border",
+              toast.type === 'error'
+                ? 'bg-red-50 border-red-200 text-red-700'
+                : 'bg-green-50 border-green-200 text-green-700'
+            )}>
+              {toast.type === 'error' ? (
+                <AlertCircle className="w-5 h-5 shrink-0" />
+              ) : (
+                <CheckCircle2 className="w-5 h-5 shrink-0" />
+              )}
+              <p className="text-sm font-medium flex-1">{toast.message}</p>
+              <button
+                onClick={() => setToast(null)}
+                className="shrink-0 p-1 hover:bg-black/5 rounded-full transition-colors"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

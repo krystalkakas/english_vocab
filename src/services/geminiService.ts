@@ -13,29 +13,42 @@ export async function generateWordDetails(word: string): Promise<WordDetails> {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Provide details for the English word: "${word}". 
-      Include phonetic transcription, part of speech, Vietnamese translation, and a simple example sentence in English.`,
+      contents: `Check if "${word}" is a valid, real English word or phrase. If it is NOT a real English word (e.g. random letters, typos, gibberish, or non-English text), set isValid to false and leave other fields empty. If it IS a valid English word, set isValid to true and provide: phonetic transcription (IPA), part of speech, Vietnamese translation, and a simple example sentence in English.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
+            isValid: { type: Type.BOOLEAN },
             phonetic: { type: Type.STRING },
             partOfSpeech: { type: Type.STRING },
             translation: { type: Type.STRING },
             example: { type: Type.STRING },
           },
-          required: ["phonetic", "partOfSpeech", "translation", "example"],
+          required: ["isValid", "phonetic", "partOfSpeech", "translation", "example"],
         },
       },
     });
 
     const text = response.text;
-    // Clean up potential markdown blocks
     const cleanJson = text.replace(/```json\n?|```/g, "").trim();
-    return JSON.parse(cleanJson);
-  } catch (error) {
+    const result = JSON.parse(cleanJson);
+
+    if (!result.isValid) {
+      throw new Error(`INVALID_WORD:"${word}" không phải là một từ tiếng Anh hợp lệ. Vui lòng kiểm tra lại chính tả.`);
+    }
+
+    return {
+      phonetic: result.phonetic,
+      partOfSpeech: result.partOfSpeech,
+      translation: result.translation,
+      example: result.example,
+    };
+  } catch (error: any) {
     console.error("Error generating word details:", error);
+    if (error.message?.startsWith('INVALID_WORD:')) {
+      throw new Error(error.message.replace('INVALID_WORD:', ''));
+    }
     throw new Error("Không thể lấy thông tin từ vựng từ AI. Vui lòng kiểm tra lại từ hoặc thử lại sau.");
   }
 }
