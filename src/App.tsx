@@ -115,11 +115,11 @@ export default function App() {
 
     const q = query(
       collection(db, 'words'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log(`Received snapshot with ${snapshot.docs.length} words. Pending writes: ${snapshot.metadata.hasPendingWrites}`);
       const wordsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -181,7 +181,7 @@ export default function App() {
         ...details,
         audioUrl: audioUrl || undefined,
         userId: user.uid,
-        createdAt: serverTimestamp(),
+        createdAt: Timestamp.now(),
         masteryLevel: 0
       };
 
@@ -213,8 +213,15 @@ export default function App() {
   };
 
   const filteredWords = useMemo(() => {
-    let result = words;
+    let result = [...words];
     const now = new Date();
+
+    // Sort by createdAt desc (handle pending server timestamps)
+    result.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis() || Date.now();
+      const timeB = b.createdAt?.toMillis() || Date.now();
+      return timeB - timeA;
+    });
 
     if (filter === 'day') {
       result = result.filter(w => {

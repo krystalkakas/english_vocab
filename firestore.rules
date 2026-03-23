@@ -64,7 +64,7 @@ service cloud.firestore {
 
     match /words/{wordId} {
       allow read: if isDocOwner() || isAdmin();
-      allow create: if isAuthenticated() && isValidWord(request.resource.data) && isRecent(request.resource.data.createdAt);
+      allow create: if isAuthenticated() && isValidWord(request.resource.data);
       allow update: if (isDocOwner() || isAdmin()) && isValidWord(request.resource.data) && 
                       request.resource.data.userId == resource.data.userId &&
                       request.resource.data.createdAt == resource.data.createdAt;
