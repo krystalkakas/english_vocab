@@ -40,7 +40,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, isWithinInterval, subDays } from 'date-fns';
 import { db, auth } from './firebase';
 import { Word, OperationType, FirestoreErrorInfo } from './types';
-import { generateWordDetails, generatePronunciation } from './services/geminiService';
+import { generateWordDetails, generatePronunciation, speakWithBrowserTTS } from './services/geminiService';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -210,14 +210,25 @@ export default function App() {
   };
 
   const playAudio = async (word: Word) => {
-    if (!word.audioUrl) return;
-    
     setPlayingId(word.id!);
     try {
-      const audio = new Audio(word.audioUrl);
-      await audio.play();
+      if (word.audioUrl) {
+        const audio = new Audio(word.audioUrl);
+        await new Promise<void>((resolve, reject) => {
+          audio.onended = () => resolve();
+          audio.onerror = (e) => reject(e);
+          audio.play().catch(reject);
+        });
+      } else {
+        // Fallback to browser's built-in text-to-speech
+        speakWithBrowserTTS(word.word);
+        // Wait a short time for the speech to start
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
     } catch (e) {
-      console.error("Audio play error:", e);
+      console.error("Audio play error, falling back to browser TTS:", e);
+      speakWithBrowserTTS(word.word);
+      await new Promise(resolve => setTimeout(resolve, 1500));
     } finally {
       setPlayingId(null);
     }
@@ -445,7 +456,6 @@ export default function App() {
                           <td className="px-6 py-4 text-sm font-medium">{word.translation}</td>
                           <td className="px-6 py-4 text-sm italic text-[#5A5A40] max-w-xs">{word.example}</td>
                           <td className="px-6 py-4">
-                            {word.audioUrl && (
                               <button 
                                 onClick={() => playAudio(word)}
                                 disabled={playingId === word.id}
@@ -461,7 +471,6 @@ export default function App() {
                                   <Volume2 className="w-4 h-4" />
                                 )}
                               </button>
-                            )}
                           </td>
                           <td className="px-6 py-4">
                             <button 
